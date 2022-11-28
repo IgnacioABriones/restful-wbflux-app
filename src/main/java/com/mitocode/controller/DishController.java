@@ -3,6 +3,8 @@ package com.mitocode.controller;
 import com.mitocode.model.Dish;
 import com.mitocode.service.IDishService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +15,16 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 
+import static org.springframework.hateoas.server.reactive.WebFluxLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.reactive.WebFluxLinkBuilder.methodOn;
+
 @RestController
 @RequestMapping("/dishes")
 public class DishController {
 
     @Autowired
     private IDishService service;
+    private Dish dishHateoas;
 
     @GetMapping
     public Mono<ResponseEntity<Flux<Dish>>> findAll(){
@@ -78,4 +84,26 @@ public class DishController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/hateoas/{id}")
+    public Mono<EntityModel> getHateoas(@PathVariable("id") String id){
+        Mono<Link> link1 = linkTo(methodOn(DishController.class).findById(id)).withSelfRel().toMono();
+    //practica no recomendada
+       /* return service.findById(id)
+                .flatMap(d->{
+                    this.dishHateoas = d;
+                    return link1;
+                })
+                .map(lk ->EntityModel.of(dishHateoas,lk));
+        */
+    //Practica Intermedia // puede darse con muchos operadores flatMap, map + etc
+       /* return service.findById(id)
+                .flatMap(d ->
+                     link1.map(lk -> EntityModel.of(d, lk))
+                );
+        */
+        //Practica Ideal operador con 2 flujos zipwith
+
+        return service.findById(id)
+                .zipWith(link1, EntityModel::of); //(d, lk)-> EntityModel.of(d,lk)
+    }
 }
