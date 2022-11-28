@@ -24,7 +24,7 @@ public class DishController {
 
     @Autowired
     private IDishService service;
-    private Dish dishHateoas;
+   // private Dish dishHateoas;
 
     @GetMapping
     public Mono<ResponseEntity<Flux<Dish>>> findAll(){
